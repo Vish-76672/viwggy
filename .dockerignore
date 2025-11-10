@@ -1,0 +1,24 @@
+# Ignore Git and version control stuff
+.git
+.gitignore
+
+# Ignore documentation and text files
+README.md
+LICENSE
+*.txt
+
+# Ignore database dump files
+database/*.sql
+
+# Ignore local environment and config files
+.env
+*.log
+*.ini
+
+# Ignore system junk
+.DS_Store
+Thumbs.db
+
+# Ignore node/composer dependencies if added later
+node_modules/
+vendor/
