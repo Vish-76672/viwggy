@@ -1,62 +1,55 @@
 <?php
-// orders.php — lists all orders
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// orders.php
+include('includes/header.php');
+include('includes/db.php');
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
 }
 
-include 'includes/db.php';
-include 'includes/header.php';
-
-// Fetch orders
-$result = $conn->query("SELECT * FROM orders ORDER BY order_date DESC");
+$uid = intval($_SESSION['user_id']);
+$stmt = $conn->prepare("SELECT id, items, total, order_date FROM orders WHERE user_id = ? ORDER BY order_date DESC");
+$stmt->bind_param("i", $uid);
+$stmt->execute();
+$result = $stmt->get_result();
 ?>
 
 <div class="container py-5">
-  <h2 class="fw-bold mb-4">📦 Recent Orders</h2>
+  <h2 class="fw-bold mb-4">My Orders</h2>
 
-  <?php if ($result && $result->num_rows > 0): ?>
-    <?php while ($row = $result->fetch_assoc()): ?>
-      <?php $items = json_decode($row['items'], true); ?>
-      <div class="card mb-3 shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title"><?php echo htmlspecialchars($row['fullname']); ?></h5>
-          <p class="text-muted small mb-1"><?php echo htmlspecialchars($row['phone']); ?></p>
-          <p class="mb-2"><?php echo nl2br(htmlspecialchars($row['address'])); ?></p>
-
-          <table class="table table-sm">
-            <thead>
-              <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
-            </thead>
-            <tbody>
-            <?php
-            $total = 0.0;
-            foreach ($items as $it):
-              $qty = $it['quantity'] ?? $it['qty'] ?? 1;
-              $price = floatval($it['price'] ?? 0);
-              $line = $qty * $price;
-              $total += $line;
-            ?>
-              <tr>
-                <td><?php echo htmlspecialchars($it['name']); ?></td>
-                <td><?php echo $qty; ?></td>
-                <td>₹<?php echo number_format($price,2); ?></td>
-                <td>₹<?php echo number_format($line,2); ?></td>
-              </tr>
-            <?php endforeach; ?>
-            </tbody>
-          </table>
-
-          <div class="text-end">
-            <strong>Grand Total: ₹<?php echo number_format($total, 2); ?></strong>
-          </div>
-
-          <p class="text-muted small mt-2">Ordered on: <?php echo htmlspecialchars($row['order_date']); ?></p>
-        </div>
-      </div>
-    <?php endwhile; ?>
+  <?php if ($result->num_rows == 0): ?>
+    <div class="alert alert-info">You have no past orders.</div>
   <?php else: ?>
-    <div class="alert alert-info">No orders found yet.</div>
+    <div class="list-group">
+      <?php while ($row = $result->fetch_assoc()): ?>
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between">
+            <div>
+              <strong>Order #<?php echo intval($row['id']); ?></strong>
+              <div class="text-muted small"><?php echo $row['order_date']; ?></div>
+            </div>
+            <div class="text-end">
+              <div class="fw-bold">₹<?php echo number_format($row['total'],2); ?></div>
+            </div>
+          </div>
+          <div class="mt-2 small">
+            <?php
+              $items = json_decode($row['items'], true);
+              if (is_array($items)) {
+                foreach ($items as $it) {
+                  echo htmlspecialchars($it['name'])." x".intval($it['qty'])." — ₹".number_format($it['price']*$it['qty'],2)."<br>";
+                }
+              }
+            ?>
+          </div>
+        </div>
+      <?php endwhile; ?>
+    </div>
   <?php endif; ?>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<?php
+$stmt->close();
+include('includes/footer.php');
+?>
