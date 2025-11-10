@@ -1,0 +1,37 @@
+/* assets/css/style.css */
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f7f7f8;
+  color: #333;
+}
+
+.hero {
+  background: linear-gradient(90deg, #ff6a00 0%, #ff3d00 100%);
+  padding: 80px 0;
+}
+
+.card-img-top {
+  height: 180px;
+  object-fit: cover;
+}
+
+.card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+}
+
+.navbar-brand img {
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+/* rounded-pill inputs */
+.form-control {
+  border-radius: 0.6rem;
+}
+.btn-rounded {
+  border-radius: 50px;
+}
