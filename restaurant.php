@@ -1,109 +1,69 @@
 <?php
 // restaurant.php
+include('includes/header.php');
+include('includes/db.php');
 
-// ✅ Start output buffering and session at the very top
-ob_start();
-session_start();
+// For demo: simple menu list per restaurant id.
+// In production you'd load restaurants and menu from DB.
+$restaurantId = isset($_GET['id']) ? intval($_GET['id']) : 2;
+$restaurantName = "Pizza Planet";
+if ($restaurantId == 1) $restaurantName = "Burger Hub";
+if ($restaurantId == 3) $restaurantName = "Healthy Bowl";
 
-// ✅ Include database connection (safe: no HTML here)
-include 'includes/db.php';
+$foods = [
+  ['id'=>101,'name'=>'Margherita Pizza','price'=>199,'img'=>'assets/img/food1.jpg'],
+  ['id'=>102,'name'=>'Pepperoni Pizza','price'=>249,'img'=>'assets/img/food2.jpg'],
+  ['id'=>103,'name'=>'Veggie Supreme','price'=>229,'img'=>'assets/img/food3.jpg'],
+  ['id'=>104,'name'=>'Garlic Bread','price'=>79,'img'=>'assets/img/food4.jpg'],
+];
 
-// ✅ Handle Add to Cart request before any HTML is sent
-if (isset($_POST['add_to_cart'])) {
-    $item_id = $_POST['item_id'];
-    $item_name = $_POST['item_name'];
-    $item_price = $_POST['item_price'];
-    $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 1;
-
-    // Initialize cart if not exists
-    if (!isset($_SESSION['cart'])) {
-        $_SESSION['cart'] = [];
+// Handle add-to-cart (POST)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
+    if (!isset($_SESSION['cart'])) $_SESSION['cart'] = [];
+    $fid = intval($_POST['food_id']);
+    $fname = trim($_POST['food_name']);
+    $fprice = floatval($_POST['food_price']);
+    $found_index = null;
+    // if item exists increment qty
+    foreach ($_SESSION['cart'] as $i => $it) {
+        if (isset($it['id']) && $it['id'] == $fid) {
+            $found_index = $i;
+            break;
+        }
     }
-
-    // If item already in cart, increase quantity
-    if (isset($_SESSION['cart'][$item_id])) {
-        $_SESSION['cart'][$item_id]['quantity'] += $quantity;
+    if ($found_index !== null) {
+        $_SESSION['cart'][$found_index]['qty'] += 1;
     } else {
-        // Add new item
-        $_SESSION['cart'][$item_id] = [
-            'id' => $item_id,
-            'name' => $item_name,
-            'price' => $item_price,
-            'quantity' => $quantity
-        ];
+        $_SESSION['cart'][] = ['id'=>$fid, 'name'=>$fname, 'price'=>$fprice, 'qty'=>1];
     }
-
-    // ✅ Redirect BEFORE including header.php (prevents header warnings)
     header("Location: cart.php");
-    exit();
+    exit;
 }
-
-// ✅ Now safe to include header.php (which prints HTML)
-include 'includes/header.php';
 ?>
 
-<!-- ✅ Restaurant Page HTML -->
-<div class="container my-5">
-    <h1 class="text-center mb-4 text-warning">🍔 Viwggy Restaurants</h1>
-    <p class="text-center text-muted">Order your favorite meals instantly</p>
+<div class="container py-5">
+  <h2 class="fw-bold mb-4"><?php echo htmlspecialchars($restaurantName); ?></h2>
+  <div class="row">
+    <?php foreach($foods as $f): ?>
+      <div class="col-md-3 mb-4">
+        <div class="card border-0 shadow-sm rounded-4">
+          <img src="<?php echo $f['img']; ?>" class="card-img-top" alt="<?php echo htmlspecialchars($f['name']); ?>">
+          <div class="card-body text-center">
+            <h6 class="fw-semibold"><?php echo htmlspecialchars($f['name']); ?></h6>
+            <p class="mb-2">₹<?php echo number_format($f['price'], 2); ?></p>
 
-    <div class="row">
-        <!-- Example restaurant 1 -->
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <img src="assets/img/food1.jpg" class="card-img-top" alt="Burger">
-                <div class="card-body">
-                    <h5 class="card-title">Cheese Burst Burger</h5>
-                    <p class="card-text">₹120</p>
-                    <form method="POST" action="restaurant.php">
-                        <input type="hidden" name="item_id" value="1">
-                        <input type="hidden" name="item_name" value="Cheese Burst Burger">
-                        <input type="hidden" name="item_price" value="120">
-                        <button type="submit" name="add_to_cart" class="btn btn-warning w-100">Add to Cart</button>
-                    </form>
-                </div>
-            </div>
-        </div>
+            <form method="POST" class="d-inline">
+              <input type="hidden" name="food_id" value="<?php echo $f['id']; ?>">
+              <input type="hidden" name="food_name" value="<?php echo htmlspecialchars($f['name']); ?>">
+              <input type="hidden" name="food_price" value="<?php echo $f['price']; ?>">
+              <button type="submit" name="add_to_cart" class="btn btn-warning btn-sm rounded-pill">Add to Cart</button>
+            </form>
 
-        <!-- Example restaurant 2 -->
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <img src="assets/img/food2.jpg" class="card-img-top" alt="Pizza">
-                <div class="card-body">
-                    <h5 class="card-title">Pepperoni Pizza</h5>
-                    <p class="card-text">₹250</p>
-                    <form method="POST" action="restaurant.php">
-                        <input type="hidden" name="item_id" value="2">
-                        <input type="hidden" name="item_name" value="Pepperoni Pizza">
-                        <input type="hidden" name="item_price" value="250">
-                        <button type="submit" name="add_to_cart" class="btn btn-warning w-100">Add to Cart</button>
-                    </form>
-                </div>
-            </div>
+          </div>
         </div>
-
-        <!-- Example restaurant 3 -->
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <img src="assets/img/food3.jpg" class="card-img-top" alt="Pasta">
-                <div class="card-body">
-                    <h5 class="card-title">Creamy Alfredo Pasta</h5>
-                    <p class="card-text">₹180</p>
-                    <form method="POST" action="restaurant.php">
-                        <input type="hidden" name="item_id" value="3">
-                        <input type="hidden" name="item_name" value="Creamy Alfredo Pasta">
-                        <input type="hidden" name="item_price" value="180">
-                        <button type="submit" name="add_to_cart" class="btn btn-warning w-100">Add to Cart</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+      </div>
+    <?php endforeach; ?>
+  </div>
 </div>
 
-<?php include 'includes/footer.php'; ?>
-
-<?php
-// ✅ End output buffering at the very bottom
-ob_end_flush();
-?>
+<?php include('includes/footer.php'); ?>
